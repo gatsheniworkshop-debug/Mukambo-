@@ -1,0 +1,8 @@
+{
+  "name": "Mukambo",
+  "description": "Upgrade Mukambo into a production-ready Zimbabwe marketplace.\n\nAdd:\n- Firebase Authentication\n- Firebase Firestore\n- Firebase Storage\n- Product image upload\n- Buyer-seller chat\n- Seller ratings and reviews\n- City-based filtering for all Zimbabwe provinces\n- Favorites/wishlist\n- Push notifications\n- Product reporting\n- Admin dashboard\n- Verification badge system\n- Order tracking\n\nUse Material 3 design and keep the existing green Mukambo theme.\nGenerate all necessary screens, data models, and Firebase integration code.\n",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

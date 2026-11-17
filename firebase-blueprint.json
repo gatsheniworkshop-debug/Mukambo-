@@ -1,0 +1,673 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private user account preferences, FCM token, and contact metadata for Mukambo.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID matching the document ID."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User's display name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Private user email address."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Private Zimbabwe mobile number for EcoCash/InnBucks/OneMoney."
+        },
+        "defaultCity": {
+          "type": "string",
+          "description": "User's default Zimbabwe city for location filtering."
+        },
+        "defaultProvince": {
+          "type": "string",
+          "description": "User's default Zimbabwe province."
+        },
+        "preferredCurrency": {
+          "type": "string",
+          "enum": ["USD", "ZIG"],
+          "description": "Preferred display currency."
+        },
+        "fcmToken": {
+          "type": "string",
+          "description": "Firebase Cloud Messaging device token for push notifications."
+        },
+        "notificationsEnabled": {
+          "type": "boolean",
+          "description": "Whether push and order notifications are enabled."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when profile was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when profile was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["userId", "displayName", "defaultCity", "preferredCurrency", "createdAt", "updatedAt"]
+    },
+    "FavoriteItem": {
+      "title": "FavoriteItem",
+      "description": "User-saved marketplace wishlist listing reference.",
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "type": "string",
+          "description": "Referenced listing document ID."
+        },
+        "title": {
+          "type": "string",
+          "description": "Cached listing title."
+        },
+        "priceUsd": {
+          "type": "number",
+          "description": "Cached listing price in USD."
+        },
+        "city": {
+          "type": "string",
+          "description": "Listing city."
+        },
+        "province": {
+          "type": "string",
+          "description": "Listing province."
+        },
+        "category": {
+          "type": "string",
+          "description": "Listing category."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Primary listing image URL if uploaded."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when favorited (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["listingId", "title", "priceUsd", "city", "createdAt"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "User-scoped marketplace notification for messages, orders, and verification.",
+      "type": "object",
+      "properties": {
+        "recipientId": {
+          "type": "string",
+          "description": "Recipient Firebase Auth UID."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Sender Firebase Auth UID."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["order_update", "chat_message", "verification", "system"],
+          "description": "Notification category."
+        },
+        "title": {
+          "type": "string",
+          "description": "Notification title."
+        },
+        "body": {
+          "type": "string",
+          "description": "Notification message body."
+        },
+        "referenceId": {
+          "type": "string",
+          "description": "Optional related order, chat, or listing ID."
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Whether the notification has been read."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when notification was created (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["recipientId", "senderId", "type", "title", "body", "read", "createdAt"]
+    },
+    "SellerProfile": {
+      "title": "SellerProfile",
+      "description": "Public non-PII seller profile and verification badge status.",
+      "type": "object",
+      "properties": {
+        "sellerId": {
+          "type": "string",
+          "description": "Seller Firebase Auth UID."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Public trader or business name."
+        },
+        "city": {
+          "type": "string",
+          "description": "Seller primary city."
+        },
+        "province": {
+          "type": "string",
+          "description": "Seller primary province."
+        },
+        "businessName": {
+          "type": "string",
+          "description": "Optional registered shop or trader name."
+        },
+        "verificationStatus": {
+          "type": "string",
+          "enum": ["unverified", "pending", "verified"],
+          "description": "Seller verification badge state."
+        },
+        "verificationBadge": {
+          "type": "string",
+          "description": "Admin-assigned verification badge label."
+        },
+        "verificationNote": {
+          "type": "string",
+          "description": "Seller verification request summary."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when seller profile was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when seller profile was updated."
+        }
+      },
+      "required": ["sellerId", "displayName", "city", "verificationStatus", "createdAt", "updatedAt"]
+    },
+    "Listing": {
+      "title": "Listing",
+      "description": "Marketplace item listed for sale in Zimbabwe with location coordinates and photos.",
+      "type": "object",
+      "properties": {
+        "sellerId": {
+          "type": "string",
+          "description": "Seller's Firebase Auth UID."
+        },
+        "sellerName": {
+          "type": "string",
+          "description": "Public seller display name."
+        },
+        "title": {
+          "type": "string",
+          "description": "Item title."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed item description."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Electronics", "Solar & Power", "Vehicles", "Home & Furniture", "Fashion", "Agriculture", "Crafts & Art"],
+          "description": "Marketplace category."
+        },
+        "condition": {
+          "type": "string",
+          "enum": ["New", "Like New", "Good", "Refurbished"],
+          "description": "Item condition."
+        },
+        "priceUsd": {
+          "type": "number",
+          "description": "Price in USD."
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["USD", "ZIG"],
+          "description": "Primary listing currency."
+        },
+        "province": {
+          "type": "string",
+          "description": "Zimbabwe province."
+        },
+        "city": {
+          "type": "string",
+          "description": "Zimbabwe city or town."
+        },
+        "suburb": {
+          "type": "string",
+          "description": "Local suburb or neighborhood."
+        },
+        "latitude": {
+          "type": "number",
+          "description": "Listing latitude for distance filtering."
+        },
+        "longitude": {
+          "type": "number",
+          "description": "Listing longitude for distance filtering."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "reserved", "sold", "removed"],
+          "description": "Lifecycle status of the listing."
+        },
+        "buyerId": {
+          "type": "string",
+          "description": "Buyer UID when reserved or sold."
+        },
+        "imageUrls": {
+          "type": "array",
+          "description": "Uploaded Firebase Storage download URLs (max 4)."
+        },
+        "localImageNames": {
+          "type": "array",
+          "description": "App-local fallback photo filenames (max 4)."
+        },
+        "localImageName": {
+          "type": "string",
+          "description": "Optional app-local primary photo filename."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when listing was posted (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when listing was updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "sellerId",
+        "sellerName",
+        "title",
+        "description",
+        "category",
+        "condition",
+        "priceUsd",
+        "currency",
+        "city",
+        "suburb",
+        "latitude",
+        "longitude",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Escrow-protected payment transaction with delivery and tracking lifecycle.",
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "type": "string",
+          "description": "Purchased listing document ID."
+        },
+        "listingTitle": {
+          "type": "string",
+          "description": "Snapshot title of the purchased item."
+        },
+        "buyerId": {
+          "type": "string",
+          "description": "Buyer's Firebase Auth UID."
+        },
+        "buyerName": {
+          "type": "string",
+          "description": "Buyer's display name."
+        },
+        "sellerId": {
+          "type": "string",
+          "description": "Seller's Firebase Auth UID."
+        },
+        "sellerName": {
+          "type": "string",
+          "description": "Seller's display name."
+        },
+        "amountUsd": {
+          "type": "number",
+          "description": "Order total in USD."
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["USD", "ZIG"],
+          "description": "Settlement currency."
+        },
+        "paymentGateway": {
+          "type": "string",
+          "enum": ["EcoCash", "InnBucks", "OneMoney", "ZimSwitch / Card"],
+          "description": "Zimbabwe payment gateway used."
+        },
+        "maskedAccount": {
+          "type": "string",
+          "description": "Sanitized masked phone or card last-4 digits."
+        },
+        "gatewayReference": {
+          "type": "string",
+          "description": "Unique payment gateway transaction reference."
+        },
+        "deliveryCity": {
+          "type": "string",
+          "description": "Pickup or delivery city."
+        },
+        "deliveryMethod": {
+          "type": "string",
+          "enum": ["Meetup / Pickup", "Courier Delivery"],
+          "description": "Fulfillment method."
+        },
+        "escrowStatus": {
+          "type": "string",
+          "enum": ["escrow_held", "dispatched", "in_transit", "delivered", "released", "disputed", "refunded"],
+          "description": "Current escrow and order tracking lifecycle state."
+        },
+        "courierName": {
+          "type": "string",
+          "description": "Courier or handover service name."
+        },
+        "trackingCode": {
+          "type": "string",
+          "description": "Shipment or waybill tracking code."
+        },
+        "estimatedDelivery": {
+          "type": "string",
+          "description": "Estimated delivery window."
+        },
+        "trackingNotes": {
+          "type": "string",
+          "description": "Latest shipment or dispute resolution note."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when order was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when order was updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "listingId",
+        "listingTitle",
+        "buyerId",
+        "buyerName",
+        "sellerId",
+        "sellerName",
+        "amountUsd",
+        "currency",
+        "paymentGateway",
+        "maskedAccount",
+        "gatewayReference",
+        "deliveryCity",
+        "deliveryMethod",
+        "escrowStatus",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ChatThread": {
+      "title": "ChatThread",
+      "description": "Buyer-seller conversation thread linked to a marketplace listing.",
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "type": "string",
+          "description": "Listing document ID."
+        },
+        "listingTitle": {
+          "type": "string",
+          "description": "Listing title snapshot."
+        },
+        "listingPriceUsd": {
+          "type": "number",
+          "description": "Listing price snapshot in USD."
+        },
+        "buyerId": {
+          "type": "string",
+          "description": "Buyer Firebase Auth UID."
+        },
+        "buyerName": {
+          "type": "string",
+          "description": "Buyer display name."
+        },
+        "sellerId": {
+          "type": "string",
+          "description": "Seller Firebase Auth UID."
+        },
+        "sellerName": {
+          "type": "string",
+          "description": "Seller display name."
+        },
+        "participantIds": {
+          "type": "array",
+          "description": "Exact 2-UID list of buyerId and sellerId."
+        },
+        "lastMessage": {
+          "type": "string",
+          "description": "Preview of the latest message."
+        },
+        "lastSenderId": {
+          "type": "string",
+          "description": "UID of the sender of the last message."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when thread started."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest message."
+        }
+      },
+      "required": [
+        "listingId",
+        "listingTitle",
+        "listingPriceUsd",
+        "buyerId",
+        "buyerName",
+        "sellerId",
+        "sellerName",
+        "participantIds",
+        "lastMessage",
+        "lastSenderId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Individual message inside a buyer-seller chat thread.",
+      "type": "object",
+      "properties": {
+        "chatId": {
+          "type": "string",
+          "description": "Parent chat thread ID."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "Sender Firebase Auth UID."
+        },
+        "senderName": {
+          "type": "string",
+          "description": "Sender display name."
+        },
+        "text": {
+          "type": "string",
+          "description": "Message body."
+        },
+        "participantIds": {
+          "type": "array",
+          "description": "Denormalized participant UIDs from parent chat."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when message was sent."
+        }
+      },
+      "required": ["chatId", "senderId", "senderName", "text", "participantIds", "createdAt"]
+    },
+    "SellerReview": {
+      "title": "SellerReview",
+      "description": "Verified buyer rating and review for a released order.",
+      "type": "object",
+      "properties": {
+        "orderId": {
+          "type": "string",
+          "description": "Released order document ID."
+        },
+        "listingId": {
+          "type": "string",
+          "description": "Purchased listing document ID."
+        },
+        "listingTitle": {
+          "type": "string",
+          "description": "Purchased listing title."
+        },
+        "sellerId": {
+          "type": "string",
+          "description": "Reviewed seller UID."
+        },
+        "reviewerId": {
+          "type": "string",
+          "description": "Buyer UID who wrote the review."
+        },
+        "reviewerName": {
+          "type": "string",
+          "description": "Buyer display name."
+        },
+        "rating": {
+          "type": "integer",
+          "description": "Star rating from 1 to 5."
+        },
+        "comment": {
+          "type": "string",
+          "description": "Review feedback comment."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["published", "hidden"],
+          "description": "Moderation visibility status."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when review was submitted."
+        }
+      },
+      "required": ["orderId", "listingId", "listingTitle", "sellerId", "reviewerId", "reviewerName", "rating", "comment", "status", "createdAt"]
+    },
+    "ListingReport": {
+      "title": "ListingReport",
+      "description": "User-submitted moderation report against a marketplace listing.",
+      "type": "object",
+      "properties": {
+        "listingId": {
+          "type": "string",
+          "description": "Reported listing ID."
+        },
+        "listingTitle": {
+          "type": "string",
+          "description": "Snapshot title of the reported listing."
+        },
+        "sellerId": {
+          "type": "string",
+          "description": "Seller UID of the reported listing."
+        },
+        "reporterId": {
+          "type": "string",
+          "description": "Reporter Firebase Auth UID."
+        },
+        "reporterName": {
+          "type": "string",
+          "description": "Reporter display name."
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "Suspected Scam / Fraud",
+            "Counterfeit or Prohibited Item",
+            "Misleading Price or Photos",
+            "Already Sold / Unresponsive",
+            "Duplicate Spam"
+          ],
+          "description": "Structured report reason."
+        },
+        "details": {
+          "type": "string",
+          "description": "Optional additional context from reporter."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "resolved", "dismissed"],
+          "description": "Admin moderation status."
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Optional moderation notes set by admin."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when report was filed."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when report was last updated."
+        }
+      },
+      "required": ["listingId", "listingTitle", "sellerId", "reporterId", "reporterName", "reason", "status", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Owner-only user profile and private contact preferences."
+    },
+    "/users/{userId}/favorites/{listingId}": {
+      "schema": { "$ref": "#/entities/FavoriteItem" },
+      "description": "User's saved wishlist marketplace listings."
+    },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/AppNotification" },
+      "description": "User-scoped notifications for order tracking, chat messages, and verification."
+    },
+    "/sellerProfiles/{sellerId}": {
+      "schema": { "$ref": "#/entities/SellerProfile" },
+      "description": "Public non-PII seller profile and verification badge status."
+    },
+    "/listings/{listingId}": {
+      "schema": { "$ref": "#/entities/Listing" },
+      "description": "Zimbabwe marketplace listings with province, city, suburb, coordinates, and photos."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Escrow-protected payment orders and tracking updates scoped to buyerId and sellerId."
+    },
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/ChatThread" },
+      "description": "Buyer-seller chat threads scoped to participants."
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Immutable chat messages with denormalized participantIds."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/SellerReview" },
+      "description": "Verified buyer ratings and reviews tied to released orders."
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/ListingReport" },
+      "description": "Product reports moderated in the Admin Dashboard."
+    }
+  }
+}

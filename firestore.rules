@@ -1,0 +1,501 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        ('email_verified' in request.auth.token &&
+         request.auth.token.email_verified == true &&
+         'email' in request.auth.token &&
+         request.auth.token.email == 'gatsheniworkshop@gmail.com') ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             (!('email' in data) || data.email == null || (data.email is string && data.email.size() <= 120)) &&
+             (!('phoneNumber' in data) || data.phoneNumber == null || (data.phoneNumber is string && data.phoneNumber.size() <= 24)) &&
+             data.defaultCity is string && data.defaultCity.size() >= 1 && data.defaultCity.size() <= 40 &&
+             (!('defaultProvince' in data) || data.defaultProvince == null || (data.defaultProvince is string && data.defaultProvince.size() <= 40)) &&
+             data.preferredCurrency in ['USD', 'ZIG'] &&
+             (!('fcmToken' in data) || data.fcmToken == null || (data.fcmToken is string && data.fcmToken.size() <= 512)) &&
+             (!('notificationsEnabled' in data) || data.notificationsEnabled is bool) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidFavorite(data) {
+      return data.listingId is string && isValidId(data.listingId) &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.priceUsd is number && data.priceUsd >= 0 && data.priceUsd <= 1000000 &&
+             data.city is string && data.city.size() >= 1 && data.city.size() <= 40 &&
+             (!('province' in data) || data.province == null || (data.province is string && data.province.size() <= 40)) &&
+             (!('category' in data) || data.category == null || (data.category is string && data.category.size() <= 40)) &&
+             (!('imageUrl' in data) || data.imageUrl == null || (data.imageUrl is string && data.imageUrl.size() <= 600)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidNotification(data) {
+      return data.recipientId is string && isValidId(data.recipientId) &&
+             data.senderId is string && isValidId(data.senderId) &&
+             data.type in ['order_update', 'chat_message', 'verification', 'system'] &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.body is string && data.body.size() >= 1 && data.body.size() <= 300 &&
+             (!('referenceId' in data) || data.referenceId == null || (data.referenceId is string && data.referenceId.size() <= 128)) &&
+             data.read is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidSellerProfile(data) {
+      return data.sellerId is string && isValidId(data.sellerId) &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60 &&
+             data.city is string && data.city.size() >= 1 && data.city.size() <= 40 &&
+             (!('province' in data) || data.province == null || (data.province is string && data.province.size() <= 40)) &&
+             (!('businessName' in data) || data.businessName == null || (data.businessName is string && data.businessName.size() <= 80)) &&
+             data.verificationStatus in ['unverified', 'pending', 'verified'] &&
+             (!('verificationBadge' in data) || data.verificationBadge == null || (data.verificationBadge is string && data.verificationBadge.size() <= 40)) &&
+             (!('verificationNote' in data) || data.verificationNote == null || (data.verificationNote is string && data.verificationNote.size() <= 300)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidListing(data) {
+      return data.sellerId is string && data.sellerId.size() >= 1 && data.sellerId.size() <= 128 &&
+             data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 60 &&
+             data.title is string && data.title.size() >= 2 && data.title.size() <= 100 &&
+             data.description is string && data.description.size() >= 2 && data.description.size() <= 1000 &&
+             data.category in ['Electronics', 'Solar & Power', 'Vehicles', 'Home & Furniture', 'Fashion', 'Agriculture', 'Crafts & Art'] &&
+             data.condition in ['New', 'Like New', 'Good', 'Refurbished'] &&
+             data.priceUsd is number && data.priceUsd > 0 && data.priceUsd <= 1000000 &&
+             data.currency in ['USD', 'ZIG'] &&
+             (!('province' in data) || data.province == null || (data.province is string && data.province.size() <= 40)) &&
+             data.city is string && data.city.size() >= 1 && data.city.size() <= 40 &&
+             data.suburb is string && data.suburb.size() >= 1 && data.suburb.size() <= 50 &&
+             data.latitude is number && data.latitude >= -90.0 && data.latitude <= 90.0 &&
+             data.longitude is number && data.longitude >= -180.0 && data.longitude <= 180.0 &&
+             data.status in ['active', 'reserved', 'sold', 'removed'] &&
+             (!('buyerId' in data) || data.buyerId == null || (data.buyerId is string && data.buyerId.size() <= 128)) &&
+             (!('localImageName' in data) || data.localImageName == null || (data.localImageName is string && data.localImageName.size() <= 120)) &&
+             (!('imageUrls' in data) || (data.imageUrls is list && data.imageUrls.size() <= 4 && (data.imageUrls.size() == 0 || (data.imageUrls[0] is string && data.imageUrls[0].size() <= 600)))) &&
+             (!('localImageNames' in data) || (data.localImageNames is list && data.localImageNames.size() <= 4 && (data.localImageNames.size() == 0 || (data.localImageNames[0] is string && data.localImageNames[0].size() <= 120)))) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidOrder(data) {
+      return data.listingId is string && isValidId(data.listingId) &&
+             data.listingTitle is string && data.listingTitle.size() >= 1 && data.listingTitle.size() <= 100 &&
+             data.buyerId is string && data.buyerId.size() >= 1 && data.buyerId.size() <= 128 &&
+             data.buyerName is string && data.buyerName.size() >= 1 && data.buyerName.size() <= 60 &&
+             data.sellerId is string && data.sellerId.size() >= 1 && data.sellerId.size() <= 128 &&
+             data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 60 &&
+             data.amountUsd is number && data.amountUsd > 0 && data.amountUsd <= 1000000 &&
+             data.currency in ['USD', 'ZIG'] &&
+             data.paymentGateway in ['EcoCash', 'InnBucks', 'OneMoney', 'ZimSwitch / Card'] &&
+             data.maskedAccount is string && data.maskedAccount.size() >= 3 && data.maskedAccount.size() <= 30 &&
+             data.gatewayReference is string && data.gatewayReference.size() >= 6 && data.gatewayReference.size() <= 40 &&
+             data.deliveryCity is string && data.deliveryCity.size() >= 1 && data.deliveryCity.size() <= 40 &&
+             data.deliveryMethod in ['Meetup / Pickup', 'Courier Delivery'] &&
+             data.escrowStatus in ['escrow_held', 'dispatched', 'in_transit', 'delivered', 'released', 'disputed', 'refunded'] &&
+             (!('courierName' in data) || data.courierName == null || (data.courierName is string && data.courierName.size() <= 60)) &&
+             (!('trackingCode' in data) || data.trackingCode == null || (data.trackingCode is string && data.trackingCode.size() <= 40)) &&
+             (!('estimatedDelivery' in data) || data.estimatedDelivery == null || (data.estimatedDelivery is string && data.estimatedDelivery.size() <= 60)) &&
+             (!('trackingNotes' in data) || data.trackingNotes == null || (data.trackingNotes is string && data.trackingNotes.size() <= 200)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidChatThread(data) {
+      return data.listingId is string && isValidId(data.listingId) &&
+             data.listingTitle is string && data.listingTitle.size() >= 1 && data.listingTitle.size() <= 100 &&
+             data.listingPriceUsd is number && data.listingPriceUsd >= 0 && data.listingPriceUsd <= 1000000 &&
+             data.buyerId is string && isValidId(data.buyerId) &&
+             data.buyerName is string && data.buyerName.size() >= 1 && data.buyerName.size() <= 60 &&
+             data.sellerId is string && isValidId(data.sellerId) &&
+             data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 60 &&
+             data.participantIds is list && data.participantIds.size() == 2 &&
+             data.buyerId in data.participantIds && data.sellerId in data.participantIds &&
+             data.lastMessage is string && data.lastMessage.size() >= 1 && data.lastMessage.size() <= 500 &&
+             data.lastSenderId is string && data.lastSenderId in data.participantIds &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidChatMessage(data) {
+      return data.chatId is string && isValidId(data.chatId) &&
+             data.senderId is string && isValidId(data.senderId) &&
+             data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 60 &&
+             data.text is string && data.text.size() >= 1 && data.text.size() <= 1000 &&
+             data.participantIds is list && data.participantIds.size() == 2 &&
+             data.senderId in data.participantIds &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidSellerReview(data) {
+      return data.orderId is string && isValidId(data.orderId) &&
+             data.listingId is string && isValidId(data.listingId) &&
+             data.listingTitle is string && data.listingTitle.size() >= 1 && data.listingTitle.size() <= 100 &&
+             data.sellerId is string && isValidId(data.sellerId) &&
+             data.reviewerId is string && isValidId(data.reviewerId) &&
+             data.reviewerName is string && data.reviewerName.size() >= 1 && data.reviewerName.size() <= 60 &&
+             data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() >= 2 && data.comment.size() <= 500 &&
+             data.status in ['published', 'hidden'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidListingReport(data) {
+      return data.listingId is string && isValidId(data.listingId) &&
+             data.listingTitle is string && data.listingTitle.size() >= 1 && data.listingTitle.size() <= 100 &&
+             data.sellerId is string && isValidId(data.sellerId) &&
+             data.reporterId is string && isValidId(data.reporterId) &&
+             data.reporterName is string && data.reporterName.size() >= 1 && data.reporterName.size() <= 60 &&
+             data.reason in [
+               'Suspected Scam / Fraud',
+               'Counterfeit or Prohibited Item',
+               'Misleading Price or Photos',
+               'Already Sold / Unresponsive',
+               'Duplicate Spam'
+             ] &&
+             (!('details' in data) || data.details == null || (data.details is string && data.details.size() <= 500)) &&
+             data.status in ['open', 'resolved', 'dismissed'] &&
+             (!('adminNotes' in data) || data.adminNotes == null || (data.adminNotes is string && data.adminNotes.size() <= 300)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // 0. Trusted Admins Registry (read self only; writes blocked from clients)
+    match /admins/{adminUid} {
+      allow get: if isSignedIn() && isValidId(adminUid) && (request.auth.uid == adminUid || isAdmin());
+      allow list, create, update, delete: if false;
+    }
+
+    // 1. Private User Profile (Owner-only PII isolation)
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'defaultCity', 'preferredCurrency', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'email', 'phoneNumber', 'defaultCity', 'defaultProvince', 'preferredCurrency', 'fcmToken', 'notificationsEnabled', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'phoneNumber', 'defaultCity', 'defaultProvince', 'preferredCurrency', 'fcmToken', 'notificationsEnabled', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // 2. Saved Favorites / Wishlist Subcollection (Owner-only)
+      match /favorites/{listingId} {
+        allow get: if isOwner(userId) && isValidId(listingId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(listingId) &&
+                         incoming().listingId == listingId &&
+                         incoming().keys().hasAll(['listingId', 'title', 'priceUsd', 'city', 'createdAt']) &&
+                         incoming().keys().hasOnly(['listingId', 'title', 'priceUsd', 'city', 'province', 'category', 'imageUrl', 'createdAt']) &&
+                         isValidFavorite(incoming());
+
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(listingId);
+      }
+
+      // 3. Notifications Subcollection
+      match /notifications/{notificationId} {
+        allow get: if isOwner(userId) && isValidId(notificationId);
+        allow list: if isOwner(userId);
+
+        allow create: if isSignedIn() &&
+                         isValidId(userId) &&
+                         isValidId(notificationId) &&
+                         incoming().recipientId == userId &&
+                         incoming().senderId == request.auth.uid &&
+                         incoming().read == false &&
+                         incoming().keys().hasAll(['recipientId', 'senderId', 'type', 'title', 'body', 'read', 'createdAt']) &&
+                         incoming().keys().hasOnly(['recipientId', 'senderId', 'type', 'title', 'body', 'referenceId', 'read', 'createdAt']) &&
+                         isValidNotification(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(notificationId) &&
+                         isValidNotification(incoming()) &&
+                         incoming().recipientId == existing().recipientId &&
+                         incoming().senderId == existing().senderId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+
+        allow delete: if isOwner(userId) && isValidId(notificationId);
+      }
+    }
+
+    // 4. Public Non-PII Seller Profiles & Verification Badge System
+    match /sellerProfiles/{sellerId} {
+      allow get: if isSignedIn() && isValidId(sellerId);
+      allow list: if isSignedIn() && (
+        resource.data.verificationStatus == 'verified' ||
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if isOwner(sellerId) &&
+                       isValidId(sellerId) &&
+                       incoming().sellerId == request.auth.uid &&
+                       incoming().verificationStatus == 'unverified' &&
+                       (!('verificationBadge' in incoming()) || incoming().verificationBadge == null) &&
+                       incoming().keys().hasAll(['sellerId', 'displayName', 'city', 'verificationStatus', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['sellerId', 'displayName', 'city', 'province', 'businessName', 'verificationStatus', 'verificationBadge', 'verificationNote', 'createdAt', 'updatedAt']) &&
+                       isValidSellerProfile(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(sellerId) &&
+                       isValidSellerProfile(incoming()) &&
+                       incoming().sellerId == existing().sellerId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         (isAdmin() &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['verificationStatus', 'verificationBadge', 'verificationNote', 'updatedAt'])) ||
+                         (isOwner(sellerId) &&
+                          (incoming().verificationStatus == existing().verificationStatus ||
+                           (existing().verificationStatus == 'unverified' && incoming().verificationStatus == 'pending')) &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'city', 'province', 'businessName', 'verificationStatus', 'verificationNote', 'updatedAt']))
+                       );
+
+      allow delete: if false;
+    }
+
+    // 5. Marketplace Listings
+    match /listings/{listingId} {
+      allow get: if isSignedIn() &&
+                    isValidId(listingId) &&
+                    (existing().status == 'active' || existing().sellerId == request.auth.uid || existing().buyerId == request.auth.uid || isAdmin());
+
+      allow list: if isSignedIn() &&
+                     (resource.data.status == 'active' || resource.data.sellerId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(listingId) &&
+                       incoming().sellerId == request.auth.uid &&
+                       incoming().status == 'active' &&
+                       (!('buyerId' in incoming()) || incoming().buyerId == null) &&
+                       incoming().keys().hasAll(['sellerId', 'sellerName', 'title', 'description', 'category', 'condition', 'priceUsd', 'currency', 'city', 'suburb', 'latitude', 'longitude', 'status', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['sellerId', 'sellerName', 'title', 'description', 'category', 'condition', 'priceUsd', 'currency', 'province', 'city', 'suburb', 'latitude', 'longitude', 'status', 'buyerId', 'localImageName', 'localImageNames', 'imageUrls', 'createdAt', 'updatedAt']) &&
+                       isValidListing(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(listingId) &&
+                       isValidListing(incoming()) &&
+                       incoming().sellerId == existing().sellerId &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         // Tier 0: Admin moderation (remove/restore listing)
+                         (isAdmin() &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])) ||
+                         // Tier 1: Seller updates their active/reserved listing
+                         (existing().sellerId == request.auth.uid &&
+                          existing().status != 'sold' &&
+                          existing().status != 'removed' &&
+                          incoming().status in ['active', 'reserved'] &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'category', 'condition', 'priceUsd', 'currency', 'province', 'city', 'suburb', 'latitude', 'longitude', 'status', 'localImageName', 'localImageNames', 'imageUrls', 'updatedAt'])) ||
+                         // Tier 2: Buyer purchases active listing via atomic checkout
+                         (existing().status == 'active' &&
+                          incoming().status == 'sold' &&
+                          incoming().buyerId == request.auth.uid &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'buyerId', 'updatedAt']))
+                       );
+
+      allow delete: if isSignedIn() &&
+                       isValidId(listingId) &&
+                       ((existing().sellerId == request.auth.uid && existing().status == 'active') || isAdmin());
+    }
+
+    // 6. Escrow Payment Orders & Order Tracking
+    match /orders/{orderId} {
+      allow get: if isSignedIn() &&
+                    isValidId(orderId) &&
+                    (existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid || isAdmin());
+
+      allow list: if isSignedIn() &&
+                     (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(orderId) &&
+                       incoming().buyerId == request.auth.uid &&
+                       incoming().escrowStatus == 'escrow_held' &&
+                       incoming().keys().hasAll(['listingId', 'listingTitle', 'buyerId', 'buyerName', 'sellerId', 'sellerName', 'amountUsd', 'currency', 'paymentGateway', 'maskedAccount', 'gatewayReference', 'deliveryCity', 'deliveryMethod', 'escrowStatus', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['listingId', 'listingTitle', 'buyerId', 'buyerName', 'sellerId', 'sellerName', 'amountUsd', 'currency', 'paymentGateway', 'maskedAccount', 'gatewayReference', 'deliveryCity', 'deliveryMethod', 'escrowStatus', 'courierName', 'trackingCode', 'estimatedDelivery', 'trackingNotes', 'createdAt', 'updatedAt']) &&
+                       isValidOrder(incoming()) &&
+                       exists(/databases/$(database)/documents/listings/$(incoming().listingId)) &&
+                       get(/databases/$(database)/documents/listings/$(incoming().listingId)).data.status == 'active' &&
+                       get(/databases/$(database)/documents/listings/$(incoming().listingId)).data.sellerId == incoming().sellerId &&
+                       getAfter(/databases/$(database)/documents/listings/$(incoming().listingId)).data.status == 'sold' &&
+                       getAfter(/databases/$(database)/documents/listings/$(incoming().listingId)).data.buyerId == request.auth.uid;
+
+      allow update: if isSignedIn() &&
+                       isValidId(orderId) &&
+                       existing().escrowStatus != 'released' &&
+                       existing().escrowStatus != 'refunded' &&
+                       isValidOrder(incoming()) &&
+                       incoming().buyerId == existing().buyerId &&
+                       incoming().sellerId == existing().sellerId &&
+                       incoming().listingId == existing().listingId &&
+                       incoming().amountUsd == existing().amountUsd &&
+                       incoming().gatewayReference == existing().gatewayReference &&
+                       incoming().createdAt == existing().createdAt &&
+                       (
+                         // Tier 0: Admin resolves disputed orders
+                         (isAdmin() &&
+                          existing().escrowStatus == 'disputed' &&
+                          incoming().escrowStatus in ['released', 'refunded'] &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['escrowStatus', 'trackingNotes', 'updatedAt'])) ||
+                         // Tier 1: Seller advances fulfillment tracking
+                         (request.auth.uid == existing().sellerId &&
+                          ((existing().escrowStatus == 'escrow_held' && incoming().escrowStatus == 'dispatched') ||
+                           (existing().escrowStatus == 'dispatched' && incoming().escrowStatus == 'in_transit') ||
+                           (existing().escrowStatus == 'in_transit' && incoming().escrowStatus == 'delivered')) &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['escrowStatus', 'courierName', 'trackingCode', 'estimatedDelivery', 'trackingNotes', 'updatedAt'])) ||
+                         // Tier 2: Buyer confirms delivery (releases escrow) or raises dispute
+                         (request.auth.uid == existing().buyerId &&
+                          existing().escrowStatus in ['escrow_held', 'dispatched', 'in_transit', 'delivered'] &&
+                          incoming().escrowStatus in ['released', 'disputed'] &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['escrowStatus', 'trackingNotes', 'updatedAt']))
+                       );
+
+      allow delete: if false;
+    }
+
+    // 7. Buyer-Seller Chat Threads & Messages
+    match /chats/{chatId} {
+      allow get: if isSignedIn() && isValidId(chatId) && (request.auth.uid in existing().participantIds);
+      allow list: if isSignedIn() && (request.auth.uid in resource.data.participantIds);
+
+      allow create: if isSignedIn() &&
+                       isValidId(chatId) &&
+                       incoming().buyerId == request.auth.uid &&
+                       incoming().sellerId != request.auth.uid &&
+                       incoming().keys().hasAll(['listingId', 'listingTitle', 'listingPriceUsd', 'buyerId', 'buyerName', 'sellerId', 'sellerName', 'participantIds', 'lastMessage', 'lastSenderId', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['listingId', 'listingTitle', 'listingPriceUsd', 'buyerId', 'buyerName', 'sellerId', 'sellerName', 'participantIds', 'lastMessage', 'lastSenderId', 'createdAt', 'updatedAt']) &&
+                       isValidChatThread(incoming()) &&
+                       exists(/databases/$(database)/documents/listings/$(incoming().listingId));
+
+      allow update: if isSignedIn() &&
+                       isValidId(chatId) &&
+                       request.auth.uid in existing().participantIds &&
+                       isValidChatThread(incoming()) &&
+                       incoming().buyerId == existing().buyerId &&
+                       incoming().sellerId == existing().sellerId &&
+                       incoming().listingId == existing().listingId &&
+                       incoming().participantIds == existing().participantIds &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'lastSenderId', 'updatedAt']);
+
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow get: if isSignedIn() && isValidId(chatId) && isValidId(messageId) && (request.auth.uid in existing().participantIds);
+        allow list: if isSignedIn() && (request.auth.uid in resource.data.participantIds);
+
+        allow create: if isSignedIn() &&
+                         isValidId(chatId) &&
+                         isValidId(messageId) &&
+                         incoming().chatId == chatId &&
+                         incoming().senderId == request.auth.uid &&
+                         incoming().keys().hasAll(['chatId', 'senderId', 'senderName', 'text', 'participantIds', 'createdAt']) &&
+                         incoming().keys().hasOnly(['chatId', 'senderId', 'senderName', 'text', 'participantIds', 'createdAt']) &&
+                         isValidChatMessage(incoming()) &&
+                         existsAfter(/databases/$(database)/documents/chats/$(chatId)) &&
+                         request.auth.uid in getAfter(/databases/$(database)/documents/chats/$(chatId)).data.participantIds &&
+                         incoming().participantIds == getAfter(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+
+        allow update, delete: if false;
+      }
+    }
+
+    // 8. Seller Ratings & Reviews (Requires released escrow order)
+    match /reviews/{reviewId} {
+      allow get: if isSignedIn() && isValidId(reviewId) && (existing().status == 'published' || existing().reviewerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.status == 'published' || resource.data.reviewerId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(reviewId) &&
+                       incoming().reviewerId == request.auth.uid &&
+                       incoming().status == 'published' &&
+                       incoming().keys().hasAll(['orderId', 'listingId', 'listingTitle', 'sellerId', 'reviewerId', 'reviewerName', 'rating', 'comment', 'status', 'createdAt']) &&
+                       incoming().keys().hasOnly(['orderId', 'listingId', 'listingTitle', 'sellerId', 'reviewerId', 'reviewerName', 'rating', 'comment', 'status', 'createdAt']) &&
+                       isValidSellerReview(incoming()) &&
+                       exists(/databases/$(database)/documents/orders/$(incoming().orderId)) &&
+                       get(/databases/$(database)/documents/orders/$(incoming().orderId)).data.buyerId == request.auth.uid &&
+                       get(/databases/$(database)/documents/orders/$(incoming().orderId)).data.sellerId == incoming().sellerId &&
+                       get(/databases/$(database)/documents/orders/$(incoming().orderId)).data.escrowStatus == 'released';
+
+      allow update: if isAdmin() &&
+                       isValidId(reviewId) &&
+                       isValidSellerReview(incoming()) &&
+                       incoming().orderId == existing().orderId &&
+                       incoming().reviewerId == existing().reviewerId &&
+                       incoming().sellerId == existing().sellerId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+
+      allow delete: if isAdmin() && isValidId(reviewId);
+    }
+
+    // 9. Product Reports (Moderation Queue)
+    match /reports/{reportId} {
+      allow get: if isSignedIn() && isValidId(reportId) && (existing().reporterId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.reporterId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn() &&
+                       isValidId(reportId) &&
+                       incoming().reporterId == request.auth.uid &&
+                       incoming().status == 'open' &&
+                       (!('adminNotes' in incoming()) || incoming().adminNotes == null) &&
+                       incoming().keys().hasAll(['listingId', 'listingTitle', 'sellerId', 'reporterId', 'reporterName', 'reason', 'status', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['listingId', 'listingTitle', 'sellerId', 'reporterId', 'reporterName', 'reason', 'details', 'status', 'adminNotes', 'createdAt', 'updatedAt']) &&
+                       isValidListingReport(incoming()) &&
+                       exists(/databases/$(database)/documents/listings/$(incoming().listingId));
+
+      allow update: if isAdmin() &&
+                       isValidId(reportId) &&
+                       isValidListingReport(incoming()) &&
+                       incoming().reporterId == existing().reporterId &&
+                       incoming().listingId == existing().listingId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['status', 'adminNotes', 'updatedAt']);
+
+      allow delete: if false;
+    }
+  }
+}

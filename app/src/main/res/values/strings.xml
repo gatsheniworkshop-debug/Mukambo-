@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name">Mukambo</string>
+    <string name="cd_hero_banner">Mukambo Zimbabwe marketplace banner</string>
+    <string name="cd_empty_basket">Empty woven market basket</string>
+    <string name="cd_escrow_shield">Mukambo Escrow payment protection</string>
+
+    <string name="auth_badge_zimbabwe">Zimbabwe Marketplace</string>
+    <string name="auth_tagline">Buy &amp; sell locally across Zimbabwe with escrow-protected EcoCash, InnBucks, OneMoney &amp; ZimSwitch payments.</string>
+    <string name="auth_feature_location_title">Location-Based Discovery</string>
+    <string name="auth_feature_location_desc">Filter items by city, suburb, or live GPS radius from Harare to Victoria Falls.</string>
+    <string name="auth_feature_escrow_title">Secure Payment Gateways</string>
+    <string name="auth_feature_escrow_desc">Pay via EcoCash, InnBucks, OneMoney, or ZimSwitch with funds held safely until delivery.</string>
+    <string name="auth_feature_sell_title">Sell in Seconds</string>
+    <string name="auth_feature_sell_desc">List items in USD or ZiG and track dispatches and payouts in real time.</string>
+    <string name="auth_sign_in_google">Sign in with Google</string>
+    <string name="auth_signing_in">Signing in…</string>
+    <string name="auth_footer_note">Protected by Google Sign-In &amp; Mukambo Escrow</string>
+
+    <string name="nav_explore">Explore</string>
+    <string name="nav_sell">Sell</string>
+    <string name="nav_chat">Messages</string>
+    <string name="nav_orders">Orders</string>
+    <string name="nav_profile">Profile</string>
+
+    <string name="explore_search_hint">Search solar, phones, cars, Harare…</string>
+    <string name="explore_empty_title">No listings match this area yet</string>
+    <string name="explore_empty_subtitle">Try widening your distance radius, switching provinces or cities, or loading sample Zimbabwe listings to explore.</string>
+    <string name="explore_load_samples">Load Sample Zimbabwe Listings</string>
+    <string name="explore_post_item">Post an Item</string>
+
+    <string name="checkout_title">Secure Escrow Checkout</string>
+    <string name="checkout_escrow_banner">Funds are held safely in Mukambo Escrow and only released when you confirm delivery.</string>
+    <string name="checkout_authorize_cta">Authorize Escrow Payment</string>
+    <string name="checkout_success_title">Payment Secured in Escrow</string>
+
+    <string name="report_listing_title">Report Listing</string>
+    <string name="verification_title">Seller Verification</string>
+    <string name="admin_dashboard_title">Admin Dashboard</string>
+    <string name="notifications_title">Notifications</string>
+    <string name="wishlist_title">Saved Wishlist</string>
+</resources>
